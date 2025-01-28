@@ -20,12 +20,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * https://www.FreeRTOS.org
- * https://aws.amazon.com/freertos
+ * https://github.com/FreeRTOS
  *
  */
-
-#ifndef DEMO_CONFIG_H
-#define DEMO_CONFIG_H
+ 
+#ifndef CORE_MQTT_CONFIG_H
+#define CORE_MQTT_CONFIG_H
 
 /**************************************************/
 /******* DO NOT CHANGE the following order ********/
@@ -34,19 +34,19 @@
 /* Include logging header files and define logging macros in the following order:
  * 1. Include the header file "logging_levels.h".
  * 2. Define the LIBRARY_LOG_NAME and LIBRARY_LOG_LEVEL macros depending on
- * the logging configuration for DEMO.
- * 3. Include the header file "logging_stack.h", if logging is enabled for DEMO.
+ * the logging configuration for MQTT.
+ * 3. Include the header file "logging_stack.h", if logging is enabled for MQTT.
  */
 
 #include "logging_levels.h"
 
-/* Logging configuration for the Demo. */
+/* Logging configuration for the MQTT library. */
 #ifndef LIBRARY_LOG_NAME
-    #define LIBRARY_LOG_NAME    "MQTTDemo"
+    #define LIBRARY_LOG_NAME    "MQTT"
 #endif
 
 #ifndef LIBRARY_LOG_LEVEL
-    #define LIBRARY_LOG_LEVEL    LOG_INFO
+    #define LIBRARY_LOG_LEVEL    LOG_ERROR
 #endif
 
 /* Prototype for the function used to print to console on Windows simulator
@@ -61,48 +61,49 @@ extern void vLoggingPrintf( const char * pcFormatString,
 #ifndef SdkLog
     #define SdkLog( message )    vLoggingPrintf message
 #endif
-
 #include "logging_stack.h"
-
 /************ End of logging configuration ****************/
 
 /**
- * @brief The MQTT client identifier used in this example.  Each client identifier
- * must be unique so edit as required to ensure no two clients connecting to the
- * same broker use the same client identifier.
+ * @brief The maximum number of MQTT PUBLISH messages that may be pending
+ * acknowledgement at any time.
  *
- *!!! Please note a #defined constant is used for convenience of demonstration
- *!!! only.  Production devices can use something unique to the device that can
- *!!! be read by software, such as a production serial number, instead of a
- *!!! hard coded constant.
- *
- * #define democonfigCLIENT_IDENTIFIER				"insert here."
+ * QoS 1 and 2 MQTT PUBLISHes require acknowledgment from the server before
+ * they can be completed. While they are awaiting the acknowledgment, the
+ * client must maintain information about their state. The value of this
+ * macro sets the limit on how many simultaneous PUBLISH states an MQTT
+ * context maintains.
  */
+#define MQTT_STATE_ARRAY_MAX_COUNT    10U
+
+ /*********************** coreMQTT Agent Configurations **********************/
+ /**
+  * @brief The maximum number of pending acknowledgments to track for a single
+  * connection.
+  *
+  * @note The MQTT agent tracks MQTT commands (such as PUBLISH and SUBSCRIBE) th
+  * at are still waiting to be acknowledged.  MQTT_AGENT_MAX_OUTSTANDING_ACKS set
+  * the maximum number of acknowledgments that can be outstanding at any one time.
+  * The higher this number is the greater the agent's RAM consumption will be.
+  */
+#define MQTT_AGENT_MAX_OUTSTANDING_ACKS         ( 20U )
+
+  /**
+   * @brief Time in MS that the MQTT agent task will wait in the Blocked state (so
+   * not using any CPU time) for a command to arrive in its command queue before
+   * exiting the blocked state so it can call MQTT_ProcessLoop().
+   *
+   * @note It is important MQTT_ProcessLoop() is called often if there is known
+   * MQTT traffic, but calling it too often can take processing time away from
+   * lower priority tasks and waste CPU time and power.
+   */
+#define MQTT_AGENT_MAX_EVENT_QUEUE_WAIT_TIME    ( 1000 )
+
+   /**
+    * @brief The number of command structures to allocate in the pool
+    * for the agent.
+    */
+#define MQTT_COMMAND_CONTEXTS_POOL_SIZE         10
 
 
-/**
- * @brief MQTT broker end point to connect to.
- *
- * @note If you would like to setup an MQTT broker for running this demo,
- * please see `mqtt_broker_setup.txt`.
- *
- * #define democonfigMQTT_BROKER_ENDPOINT				"insert here."
- */
-
-
-/**
- * @brief The port to use for the demo.
- *
- * #define democonfigMQTT_BROKER_PORT					( insert here. )
- */
-
-
-/**
- * @brief Set the stack size of the main demo task.
- *
- * In the Windows port, this stack only holds a structure. The actual
- * stack is created by an operating system thread.
- */
-#define democonfigDEMO_STACKSIZE    configMINIMAL_STACK_SIZE
-
-#endif /* DEMO_CONFIG_H */
+#endif /* ifndef CORE_MQTT_CONFIG_H */
